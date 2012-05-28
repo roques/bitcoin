@@ -1,0 +1,30 @@
+#!/bin/sh -e
+
+#DEBHELPER#
+
+case "$1" in
+    remove)
+        ;;
+
+    upgrade)
+        ;;
+
+    purge)
+	# We *should* remove /var/lib/bitcoin here, but there could
+	# be a wallet in there that is not yet backed up.
+	# It's better to inconvenience some than to throw away others' money.
+	echo "Make sure you have a backup of your wallet and then remove /var/lib/bitcoin" >&2
+	userdel bitcoin
+	# userdel also removed the group if empty
+	#groupdel bitcoin
+        ;;
+
+    failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+

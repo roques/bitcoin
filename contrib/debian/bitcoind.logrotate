@@ -1,0 +1,12 @@
+/var/lib/bitcoin/debug.log
+/var/lib/bitcoin/testnet/debug.log
+{
+	rotate 7
+	daily
+	missingok
+	notifempty
+	compress
+	postrotate
+		killall -HUP -u bitcoin bitcoind
+	endscript
+}

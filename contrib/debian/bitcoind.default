@@ -1,0 +1,2 @@
+# Should bitcoind be started by init?
+RUN_DAEMON="no"

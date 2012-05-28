@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# Start bitcoind
+#
+# Copyright (c) 2012 by Christian von Roques <roques@mti.ag>
+# Distributed under the MIT/X11 software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+#
+### BEGIN INIT INFO
+# Provides:          bitcoind
+# Required-Start:    $remote_fs 
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Bitcoin daemon
+# Description:       Bitcoind provides a wallet for the Bitcoin digital currency
+#                    and becomes part of the Bitcoin peer-tp-peer network.
+### END INIT INFO
+#
+
+BITCOIND=/usr/lib/bitcoin/bitcoind
+
+test -x "$BITCOIND" || exit 0
+
+RUN_DAEMON=yes
+CONFFILE=/etc/bitcoin.conf
+DATADIR=/var/lib/bitcoin
+USER=bitcoin
+test -f /etc/default/bitcoind && . /etc/default/bitcoind
+
+. /lib/init/vars.sh
+. /lib/lsb/init-functions
+
+is_yes() {
+    case "${1:-}" in
+	[Yy]es|YES|1|true) true;;
+        *) false ;;
+    esac
+}
+
+case "${1:-}" in
+    start)
+        if is_yes "$RUN_DAEMON"; then
+            log_daemon_msg "Starting Bitcoin daemon" "bitcoind"
+            start-stop-daemon --start --user "$USER" --exec "$BITCOIND" --chuid "$USER" \
+                -- -daemon "-conf=$CONFFILE" "-datadir=$DATADIR"
+            log_end_msg $?
+        fi
+        ;;
+    stop)
+        if is_yes "$RUN_DAEMON"; then
+            log_daemon_msg "Stopping Bitcoin daemon" "bitcoind"
+            start-stop-daemon --stop --user "$USER" --exec "$BITCOIND"
+            log_end_msg $?
+	fi
+	;;
+    restart|force-reload)
+        #log_daemon_msg "Restarting Bitcoin daemon" "bitcoind"
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+        exit 3
+        ;;
+esac
+

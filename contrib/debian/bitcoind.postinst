@@ -1,0 +1,27 @@
+#!/bin/sh
+
+CONF="/etc/bitcoin.conf"
+DATADIR="/var/lib/bitcoin"
+DB_CONF="$DATADIR/DB_CONF"
+
+# Make sure the "bitcoin" user and group exist
+getent group bitcoin >/dev/null 2>&1 || addgroup --system bitcoin
+
+getent passwd bitcoin >/dev/null 2>&1 || adduser --system --ingroup bitcoin --home "$DATADIR" --gecos 'Bitcoin daemon' bitcoin
+
+# might be necessary if user still exists, but DATADIR doesn't
+
+# If CONF does not contain a rpcpassword, generate a random one
+egrep '^[ 	]*rpcpassword' "$CONF" >/dev/null 2>&1 || \
+    perl -le 'print"rpcpassword=",map{(a..z,A..Z,0..9)[rand 62]}0..15' >> "$CONF"
+
+# If DB_CONF does not exist, pre-set it with automatic log removal
+for dir in "$DATADIR" "$DATADIR/testnet"; do
+    install -d -o bitcoin -g bitcoin "$dir"
+    if ! [ -e "$dir/DB_CONF" ]; then
+        echo 'set_flags DB_LOG_AUTOREMOVE' > "$dir/DB_CONF"
+        chown bitcoin:bitcoin $dir/DB_CONF
+    fi
+done
+
+#DEBHELPER#
