@@ -238,13 +238,20 @@ uint64 ReadCompactSize(Stream& is)
     return nSizeRet;
 }
 
-// Variable-length integers: bytes are a MSB base-128 encoding of the number.
-// The high bit in each byte signifies whether another digit follows. To make
-// the encoding is one-to-one, one is subtracted from all but the last digit.
-// Thus, the byte sequence a[] with length len, where all but the last byte
-// has bit 128 set, encodes the number:
+// Variable-length integers: bytes are similar to, but not quite, a
+// big-endian base-128 encoding of the number. The high bit in each
+// byte signifies whether another digit follows. To make the encoding
+// unique all but the least significant digit must not be able to
+// encode 0, thus they encode a value that is one bigger than they
+// are.  Thus, the byte sequence a[] with length len, where all but
+// the last byte has bit 128 set, encodes the number:
 //
 //   (a[len-1] & 0x7F) + sum(i=1..len-1, 128^i*((a[len-i-1] & 0x7F)+1))
+//
+// e.g.:    [0x82 0xFE 0x7F] == 0xC000 + 0x3F80 + 0x7F == 0xFFFF
+// 0x80^2 * (0x02+1) --------------^        ^      ^
+// 0x80^1 *      (0x7E+1) ------------------+      +
+// 0x80^0 *            0x7F -----------------------+
 //
 // Properties:
 // * Very small (0-127: 1 byte, 128-16511: 2 bytes, 16512-2113663: 3 bytes)
@@ -256,8 +263,8 @@ uint64 ReadCompactSize(Stream& is)
 // 0:         [0x00]  256:        [0x81 0x00]
 // 1:         [0x01]  16383:      [0xFE 0x7F]
 // 127:       [0x7F]  16384:      [0xFF 0x00]
-// 128:  [0x80 0x00]  16511: [0x80 0xFF 0x7F]
-// 255:  [0x80 0x7F]  65535: [0x82 0xFD 0x7F]
+// 128:  [0x80 0x00]  16512: [0x80 0x80 0x00]
+// 255:  [0x80 0x7F]  65535: [0x82 0xFE 0x7F]
 // 2^32:           [0x8E 0xFE 0xFE 0xFF 0x00]
 
 template<typename I>
