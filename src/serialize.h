@@ -270,12 +270,10 @@ uint64 ReadCompactSize(Stream& is)
 template<typename I>
 inline unsigned int GetSizeOfVarInt(I n)
 {
-    int nRet = 0;
-    while(true) {
-        nRet++;
-        if (n <= 0x7F)
-            break;
+    int nRet = 1;
+    while(n > 0x7F) {
         n = (n >> 7) - 1;
+        nRet++;
     }
     return nRet;
 }
@@ -285,12 +283,11 @@ void WriteVarInt(Stream& os, I n)
 {
     unsigned char tmp[(sizeof(n)*8+6)/7];
     int len=0;
-    while(true) {
-        tmp[len] = (n & 0x7F) | (len ? 0x80 : 0x00);
-        if (n <= 0x7F)
-            break;
+    tmp[0] = (n & 0x7F);
+    while(n > 0x7F) {
         n = (n >> 7) - 1;
         len++;
+        tmp[len] = 0x80 | (n & 0x7F);
     }
     do {
         WRITEDATA(os, tmp[len]);
@@ -300,16 +297,14 @@ void WriteVarInt(Stream& os, I n)
 template<typename Stream, typename I>
 I ReadVarInt(Stream& is)
 {
-    I n = 0;
-    while(true) {
-        unsigned char chData;
+    unsigned char chData;
+    READDATA(is, chData);
+    I n = chData & 0x7F;
+    while(chData & 0x80) {
         READDATA(is, chData);
-        n = (n << 7) | (chData & 0x7F);
-        if (chData & 0x80)
-            n++;
-        else
-            return n;
+        n = ((n + 1) << 7) | (chData & 0x7F);
     }
+    return n;
 }
 
 #define FLATDATA(obj)  REF(CFlatData((char*)&(obj), (char*)&(obj) + sizeof(obj)))
