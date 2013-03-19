@@ -6,3 +6,7 @@ DEB_INSTALL_MANPAGES_bitcoind += debian/manpages/*
 
 %:
 	dh --with autoreconf,bash-completion $@
+
+# Debian wheezy does not have libdb4.8-dev and libdb-dev depends on libdb5.1-dev
+override_dh_auto_configure:
+	dh_auto_configure -- --with-incompatible-bdb
